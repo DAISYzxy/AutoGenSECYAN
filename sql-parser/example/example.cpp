@@ -5,6 +5,7 @@
 
 // include the sql parser
 # include "SQLParser.h"
+#include <unordered_map>
 
 // contains printing utilities
 # include "util/sqlhelper.h"
@@ -227,10 +228,47 @@ void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
 
 
 
-void constructLinkGraph(vector<vector<int>> *linkGraph, vector<int> srr){
 
+int getAttrIdx(string exp){
+  char prefixDict[5] = {'O', 'C', 'L', 'P', 'S'};
+  char prefix = exp[0];
+  char prefix2 = exp[1];
+  if (prefix == 'P' && prefix2 == 'S'){
+    return 6;
+  }
+
+  else{
+    for (int j = 0; j < 5; j++)
+    {
+      if (prefix == prefixDict[j]){
+        return j+1;
+      }
+    }
+  }
+  return 0;
 }
 
+
+
+
+void constructLinkGraph(unordered_map<int, vector<int>> *linkGraph, int exp1Idx, int exp2Idx){
+  if ((*linkGraph).find(exp1Idx) == (*linkGraph).end()){
+    vector<int> neighbourLink;
+    neighbourLink.push_back(exp2Idx);
+    (*linkGraph).insert(make_pair(exp1Idx, neighbourLink));
+  }
+  else{
+    (*linkGraph)[exp1Idx].push_back(exp2Idx);
+  }
+  return;
+}
+
+
+
+void hasOutputAttr(bool *hasOuts, vector<int> tableHas){
+  for (int i = 0; i < tableHas.size(); i++) hasOuts[tableHas[i]] = true;
+  return;
+}
 
 
 
@@ -296,11 +334,28 @@ int main(){
   vector<string> *whereRst = &resultList;
   normalExpr(whereClause, whereRst);
 
+
+
+
+
+  unordered_map<int, vector<int>> linkGraph;
+
   cout << endl << "Output Where Clause:" <<endl;
   for (int i = 0; i < (*whereRst).size(); i++){
     cout << (*whereRst)[i] << endl;
+    if ((*whereRst)[i] == "=")
+    {
+      if ((*whereRst)[i+1][0] != '\'' && (*whereRst)[i+2][0] != '\''){
+        string exp1 = (*whereRst)[i+1];
+        string exp2 = (*whereRst)[i+2];
+        int exp1Idx = getAttrIdx(exp1);
+        int exp2Idx = getAttrIdx(exp2);
+        constructLinkGraph(&linkGraph, exp1Idx, exp2Idx);
+        constructLinkGraph(&linkGraph, exp2Idx, exp1Idx);
+      }
+    }
   }
-  
+
 
   // Obtain the groupby condition
   vector<string> groupByColumn;
@@ -316,6 +371,7 @@ int main(){
   vector<int> tableLstIdx;
   vector<int> *pTableLstIdx = &tableLstIdx;
 
+  cout << endl << "Table Index List: " << endl;
   getIdx(pTableLstIdx, tables);
   for (int i = 0; i < tableLstIdx.size(); i++){
     cout << tableLstIdx[i] << ", ";
@@ -326,7 +382,7 @@ int main(){
   vector<int> tableHas;
   vector<int> *pTableHas = &tableHas;
 
-  cout << "Table Has: ";
+  cout << endl << "Table Has: ";
   getAttrIdx(pTableHas, groupByColumn);
   for (int i = 0; i < tableHas.size(); i++){
     cout << tableHas[i] << ", ";
@@ -334,28 +390,68 @@ int main(){
   cout << endl;
 
 
-  vector<vector<int>> linkGraph;
-
-
-
-
-
-  MNode node;
-  MTree tree;
-  node.Parent = nullptr;
-  node.element = 1;
-  node.tag = true;
-  tree.init(&node);
-  MNode node2, node3, node4, node5, node6, node7, node8, node9, node10;
-  node2.element = 2, node3.element = 3, node4.element = 4, node5.element = 5, node6.element = 6;
-  node2.tag = true, node3.tag = true, node4.tag = false, node5.tag = true;
-  tree.putChild(&node2, &node), tree.putChild(&node3, &node), tree.putChild(&node4, &node);
-  tree.putChild(&node6, &node3);
-  tree.tranversal();
+  cout << endl << "Link Graph: " << endl;
+  for(auto it = linkGraph.begin(); it != linkGraph.end(); it++){
+      cout << it->first << ": ";
+      vector<int> tmpNeighbour = it->second;
+      for (int i = 0; i < tmpNeighbour.size(); i++)
+      {
+        cout << tmpNeighbour[i] << ", ";
+      }
+      cout << endl;
+  }
   cout << endl;
-  if (tree.isFreeConnex())
-    cout << "true!" << endl;
-  else
-    cout << "false!" << endl;
+
+
+
+
+  int tableSize = tableLstIdx.size();
+  bool *inTree = new bool[tableSize + 1];
+  for (int i = 0; i < tableSize + 1; i++) inTree[i] = false;
+
+  bool *hasOutAttr = new bool[tableSize + 1];
+  for (int i = 0; i < tableSize + 1; i++) hasOutAttr[i] = false;
+  hasOutputAttr(hasOutAttr, tableHas);
+
+  cout << endl << "Has Output: " << endl;
+  for (int i = 0; i < tableSize + 1; i++)
+  {
+    cout << hasOutAttr[i] << endl;
+  }
+  cout << endl;
+
+
+  cout << endl;
+  for (int i = 0; i < tableSize; i++)
+  {
+    for (int i = 0; i < tableSize + 1; i++) inTree[i] = false;
+    MNode *node = new MNode;
+    MTree *tree = new MTree;
+    node->Parent = nullptr;
+    node->element = tableLstIdx[i];
+    node->tag = hasOutAttr[node->element];
+    tree->init(node);
+    inTree[node->element] = true;
+    vector<int> neighbour = linkGraph[node->element];
+    for (int i = 0; i < neighbour.size(); i++)
+    {
+      if (!inTree[neighbour[i]]){
+        MNode *node2 = new MNode;
+        node2->element = neighbour[i];
+        node2->tag = hasOutAttr[node2->element];
+        tree->putChild(node2, node);
+        inTree[node2->element] = true;
+      }
+    }
+    tree->tranversal();
+    cout << endl;
+    if (tree->isFreeConnex()){
+      cout << "true!" << endl;
+      break;
+    }
+    else
+      cout << "false!" << endl;
+  }
+
 }
 
