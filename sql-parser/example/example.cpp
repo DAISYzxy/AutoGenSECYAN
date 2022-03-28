@@ -23,6 +23,12 @@
 using namespace std;
 using namespace hsql;
 
+
+void normalExpr(Expr* exp, vector<string> *result);
+void opExpr(Expr* exp, vector<string> *result);
+
+
+
 void MTree::init(MNode *root) { this->root = root; }
 
 
@@ -124,121 +130,216 @@ static const map<const OperatorType, const string> operatorToToken = {
     {kOpExists, "EXISTS"}};
 
 
-// Iteratively Tackle the Operation Expression
-void opExpr(Expr* exp, vector<char*> *result) {
+
+void normalExpr(Expr* exp, vector<string> *result){
+  if (exp->type == kExprColumnRef){
+    string str = exp->name;
+    (*result).push_back(str);
+    //cout << "put: " << exp->name << endl;
+  }
+  if (exp->type == kExprLiteralString){
+    string str = exp->name;
+    str = "'" + str + "'";
+    (*result).push_back(str);
+    //cout << "put: " << exp->name << endl;
+  }
+  if (exp->type == kExprLiteralInt){
+    string ival = to_string(exp->ival);
+    (*result).push_back(ival);
+    //cout << "put: " << new_ival << endl;
+  }
+  if (exp->type == kExprOperator){
+    opExpr(exp, result);
+  }
+  if (exp->type == kExprFunctionRef){
+    string str = exp->name;
+    (*result).push_back(str);
+    vector<Expr*>* expLst = exp->exprList;
+    for (int i = 0; i < (*expLst).size(); i++)
+    {
+      Expr* tmpExp = (*expLst)[i];
+      normalExpr(tmpExp, result);
+    }
+  }
+}
+
+
+
+
+void opExpr(Expr* exp, vector<string> *result) {
 
   if (exp->type == kExprOperator) {
     const auto iterFound = operatorToToken.find(exp->opType);
     const string str = (*iterFound).second;
-    char* opStr = (char*)str.data();
-    (*result).push_back(opStr);
+    (*result).push_back(str);
+    //cout << "put: " << opStr << endl;
 
     Expr* exp1 = exp->expr;
-    opExpr(exp1, result);
-    if (exp1->type == kExprColumnRef) (*result).push_back(exp1->name);
+    normalExpr(exp1, result);
 
     Expr* exp2 = exp->expr2;
-    opExpr(exp2, result);
-    if (exp2->type == kExprColumnRef) (*result).push_back(exp2->name);
+    normalExpr(exp2, result);
   }
 
   else return;
 }
 
 
-/*
-// Iteratively tackle the where clause: ... AND ... AND ......
-void iterWhereClause(Expr* whereClause) {
 
-  vector<char*> whereRes;
-  // AND's OperatorType is kOpAnd
-  if (whereClause->type == kExprOperator) {
-    const auto iterFound = operatorToToken.find(whereClause->opType);
-    char* opStr = (*iterFound).second;
-    whereRes.push_back(opStr);
+
+void getIdx(vector<int> *tableLstIdx, vector<string> retrieveStr){
+  string tableDict[6] = {"ORDERS", "CUSTOMER", "LINEITEM", "PART", "SUPPLIER", "PARTSUPP"};
+  for (int j = 0; j < retrieveStr.size(); j++){
+    for (int i = 0; i < 6; i++){
+      if (retrieveStr[j] == tableDict[i]){
+        (*tableLstIdx).push_back(i+1);
+        break;
+      }
+    }
   }
+  return;
 }
-*/
 
 
-// SQL-Parser Test
-int main() {
 
-  std::string query = "SELECT TOP 10 L_ORDERKEY, SUM(L_EXTENDEDPRICE*(1-L_DISCOUNT)) AS REVENUE,O_ORDERDATE, O_SHIPPRIORITY FROM CUSTOMER, ORDERS, LINEITEM WHERE C_MKTSEGMENT = 'BUILDING' AND C_CUSTKEY = O_CUSTKEY AND L_ORDERKEY = O_ORDERKEY AND O_ORDERDATE < '1995-03-15' AND L_SHIPDATE > '1995-03-15' GROUP BY L_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY";
+void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
+  char prefixDict[5] = {'O', 'C', 'L', 'P', 'S'};
+  for (int i = 0; i < groupBy.size(); i++)
+  {
+    char prefix = groupBy[i][0];
+    char prefix2 = groupBy[i][1];
+    if (prefix == 'P' && prefix2 == 'S'){
+      (*tableHas).push_back(6);
+    }
+
+    else{
+      for (int j = 0; j < 5; j++)
+      {
+        if (prefix == prefixDict[j]){
+          (*tableHas).push_back(j+1);
+          break;
+        }
+      }
+    }
+  }
+  return;
+}
+
+
+
+void constructLinkGraph(vector<vector<int>> *linkGraph, vector<int> srr){
+
+}
+
+
+
+
+// Free-connex Tree Construction and Test Part
+int main(){
+
+
+  std::string query = "SELECT O_ORDERKEY, SUM(L_EXTENDEDPRICE*(1-L_DISCOUNT)) AS REVENUE,O_ORDERDATE, O_SHIPPRIORITY FROM CUSTOMER, ORDERS, LINEITEM WHERE C_MKTSEGMENT = 'AUTOMOBILE' AND C_CUSTKEY = O_CUSTKEY AND L_ORDERKEY = O_ORDERKEY AND O_ORDERDATE < '1995-03-13' AND L_SHIPDATE > '1995-03-13' GROUP BY O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY";
 
   // parse a given query
   hsql::SQLParserResult result;
   hsql::SQLParser::parse(query, &result);
 
-  // check whether the parsing was successful
+  auto result_vct = (const SelectStatement *)result.getStatement(0);
 
-  if (result.isValid()) {
-    printf("Parsed successfully!\n");
-    printf("Number of statements: %lu\n", result.size());
-
-    for (auto i = 0u; i < result.size(); ++i) {
-      // Print a statement summary.
-      // printStatementInfo(result.getStatement(i));
-
-      ///*
-      auto result_vct = (const SelectStatement *)result.getStatement(i);
-
-      // Obtain the tables in the query
-      auto tableList = result_vct->fromTable;
-      vector<char*> tables;
-      for (TableRef* tbl : *tableList->list) tables.push_back(tbl->name);
-      cout << endl << "Selected Tables:" << endl;
-      for (int i = 0; i < tables.size(); i++){
-        cout << tables[i] << endl;
-      }
-
-
-      // Obtain the output attributes in the query
-      vector<char*> columnExp;
-      vector<Expr*> operationExp;
-      for (Expr* expr : *result_vct->selectList){
-        if (!expr) break;
-        if (expr->type == kExprColumnRef) columnExp.push_back(expr->name);
-        if (expr->type == kExprOperator) operationExp.push_back(expr);
-      }
-
-      cout << endl << "Output Column Attributes:" <<endl;
-      for (int i = 0; i < columnExp.size(); i++){
-        cout << columnExp[i] << endl;
-      }
-
-
-      // Obtain the Search Condition (where clause) -> iteratively divide the operation expression
-      // Expr* whereClause = result_vct->whereClause;
-      
-
-      // Obtain the groupby condition
-      vector<char*> groupByColumn;
-      for (Expr* expr : *result_vct->groupBy->columns) groupByColumn.push_back(expr->name);
-      cout << endl << "GroupBy Column Attributes:" <<endl;
-      for (int i = 0; i < groupByColumn.size(); i++){
-        cout << groupByColumn[i] << endl;
-      }
-      //*/
-
-    }
-    return 0;
-  } else {
-    fprintf(stderr, "Given string is not a valid SQL query.\n");
-    fprintf(stderr, "%s (L%d:%d)\n",
-            result.errorMsg(),
-            result.errorLine(),
-            result.errorColumn());
-    return -1;
+  // Obtain the tables in the query
+  auto tableList = result_vct->fromTable;
+  vector<string> tables;
+  for (TableRef* tbl : *tableList->list){
+    string str = tbl->name;
+    tables.push_back(str);
   }
-}
+  cout << endl << "Selected Tables:" << endl;
+  for (int i = 0; i < tables.size(); i++){
+    cout << tables[i] << endl;
+  }
+
+
+  // Obtain the output attributes in the query
+  vector<string> columnExp;
+  vector<Expr*> operationExp;
+  for (Expr* expr : *result_vct->selectList){
+    if (!expr) break;
+    if (expr->type == kExprColumnRef){
+      string str = expr->name;
+      columnExp.push_back(str);
+    }
+    else operationExp.push_back(expr);
+  }
+
+  cout << endl << "Output Column Attributes:" <<endl;
+  for (int i = 0; i < columnExp.size(); i++){
+    cout << columnExp[i] << endl;
+  }
+
+  vector<string> outputList;
+  vector<string> *outputOp = &outputList;
+  for (int i = 0; i < operationExp.size(); i++){
+    Expr* tmpExpr = operationExp[i];
+    // cout << "tmpExpr is " << tmpExpr->type << "." << endl;
+    normalExpr(tmpExpr, outputOp);
+  }
+
+  cout << endl << "Output Operations:" <<endl;
+  for (int i = 0; i < (*outputOp).size(); i++){
+    cout << (*outputOp)[i] << endl;
+  }
+
+
+  // Obtain the Search Condition (where clause) -> iteratively divide the operation expression
+  Expr* whereClause = result_vct->whereClause;
+  vector<string> resultList;
+  vector<string> *whereRst = &resultList;
+  normalExpr(whereClause, whereRst);
+
+  cout << endl << "Output Where Clause:" <<endl;
+  for (int i = 0; i < (*whereRst).size(); i++){
+    cout << (*whereRst)[i] << endl;
+  }
+  
+
+  // Obtain the groupby condition
+  vector<string> groupByColumn;
+  for (Expr* expr : *result_vct->groupBy->columns){
+    string str = expr->name;
+    groupByColumn.push_back(str);
+  }
+  cout << endl << "GroupBy Column Attributes:" <<endl;
+  for (int i = 0; i < groupByColumn.size(); i++){
+    cout << groupByColumn[i] << endl;
+  }
+
+  vector<int> tableLstIdx;
+  vector<int> *pTableLstIdx = &tableLstIdx;
+
+  getIdx(pTableLstIdx, tables);
+  for (int i = 0; i < tableLstIdx.size(); i++){
+    cout << tableLstIdx[i] << ", ";
+  }
+  cout << endl;
+
+
+  vector<int> tableHas;
+  vector<int> *pTableHas = &tableHas;
+
+  cout << "Table Has: ";
+  getAttrIdx(pTableHas, groupByColumn);
+  for (int i = 0; i < tableHas.size(); i++){
+    cout << tableHas[i] << ", ";
+  }
+  cout << endl;
+
+
+  vector<vector<int>> linkGraph;
 
 
 
 
-/*
-// Free-connex Tree Construction and Test Part
-int main(){
+
   MNode node;
   MTree tree;
   node.Parent = nullptr;
@@ -258,5 +359,3 @@ int main(){
     cout << "false!" << endl;
 }
 
-
-*/
