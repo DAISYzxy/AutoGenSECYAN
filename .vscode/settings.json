@@ -2,6 +2,13 @@
     "files.associations": {
         "string": "cpp",
         "iostream": "cpp",
-        "ostream": "cpp"
+        "ostream": "cpp",
+        "string_view": "cpp",
+        "__bit_reference": "cpp",
+        "bitset": "cpp",
+        "chrono": "cpp",
+        "map": "cpp",
+        "unordered_map": "cpp",
+        "algorithm": "cpp"
     }
 }

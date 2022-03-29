@@ -5,7 +5,6 @@
 
 // include the sql parser
 # include "SQLParser.h"
-#include <unordered_map>
 
 // contains printing utilities
 # include "util/sqlhelper.h"
@@ -20,6 +19,7 @@
 # include <iostream>
 # include <queue>
 # include "free_connex_tree.h"
+#include <fstream>
 
 using namespace std;
 using namespace hsql;
@@ -146,6 +146,7 @@ void normalExpr(Expr* exp, vector<string> *result){
   }
   if (exp->type == kExprLiteralInt){
     string ival = to_string(exp->ival);
+    ival = "'" + ival + "'";
     (*result).push_back(ival);
     //cout << "put: " << new_ival << endl;
   }
@@ -189,7 +190,7 @@ void opExpr(Expr* exp, vector<string> *result) {
 
 
 void getIdx(vector<int> *tableLstIdx, vector<string> retrieveStr){
-  string tableDict[6] = {"ORDERS", "CUSTOMER", "LINEITEM", "PART", "SUPPLIER", "PARTSUPP"};
+  string tableDict[6] = {"CUSTOMER", "ORDERS", "LINEITEM", "PART", "SUPPLIER", "PARTSUPP"};
   for (int j = 0; j < retrieveStr.size(); j++){
     for (int i = 0; i < 6; i++){
       if (retrieveStr[j] == tableDict[i]){
@@ -204,7 +205,7 @@ void getIdx(vector<int> *tableLstIdx, vector<string> retrieveStr){
 
 
 void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
-  char prefixDict[5] = {'O', 'C', 'L', 'P', 'S'};
+  char prefixDict[5] = {'C', 'O', 'L', 'P', 'S'};
   for (int i = 0; i < groupBy.size(); i++)
   {
     char prefix = groupBy[i][0];
@@ -230,7 +231,7 @@ void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
 
 
 int getAttrIdx(string exp){
-  char prefixDict[5] = {'O', 'C', 'L', 'P', 'S'};
+  char prefixDict[5] = {'C', 'O', 'L', 'P', 'S'};
   char prefix = exp[0];
   char prefix2 = exp[1];
   if (prefix == 'P' && prefix2 == 'S'){
@@ -265,9 +266,173 @@ void constructLinkGraph(unordered_map<int, vector<int>> *linkGraph, int exp1Idx,
 
 
 
+
+void constructRelatedAttr(unordered_map<int, vector<string>> *relatedAttr, int expIdx, string attrName){
+  if ((*relatedAttr).find(expIdx) == (*relatedAttr).end()){
+    vector<string> related;
+    related.push_back(attrName);
+    (*relatedAttr).insert(make_pair(expIdx, related));
+  }
+  else{
+    bool flag = true;
+    for (int i = 0; i < (*relatedAttr)[expIdx].size(); i++){
+      if ((*relatedAttr)[expIdx][i] == attrName)
+      {
+        flag = false;
+        break;
+      }
+    }
+    if (flag) (*relatedAttr)[expIdx].push_back(attrName);
+  }
+  //for (int i = 0; i < (*relatedAttr)[expIdx].size(); i++)
+  //{
+  //  cout << (*relatedAttr)[expIdx][i] << ",";
+  //}
+  //cout << endl;
+  return;
+}
+
+
+
+static const map<const string, const string> linkKey = {
+  {"12", "CUSTKEY"}, {"23", "ORDERKEY"}, {"34", "PARTKEY"}, {"35", "SUPPKEY"}, {"36", "SUPPKEY_PARTKEY"}
+};
+
+
+
+
+string getTail(string attrName){
+  for (int i = 0; i < attrName.length(); i++){
+    if (attrName[i] == '_') return attrName.substr(i + 1, attrName.length());
+  }
+  return attrName;
+}
+
+
+
+void getAttrHeight(string strTree, unordered_map<int, vector<string>> *relatedAttr, unordered_map<int, vector<int>> *relatedAttrHeight){
+  int height = 0;
+  for (int i = 0; i < strTree.length(); i++){
+    if (strTree[i] == 'C') height += 1;
+    else{
+      int tableIdx = int(strTree[i]) - int('0');
+      for (int j = 0; j < (*relatedAttr)[tableIdx].size(); j++){
+        if ((*relatedAttrHeight).find(tableIdx) == (*relatedAttrHeight).end()){
+          vector<int> relatedHeight;
+          relatedHeight.push_back(height);
+          (*relatedAttrHeight).insert(make_pair(tableIdx, relatedHeight));
+        }
+        else{
+          (*relatedAttrHeight)[tableIdx].push_back(height);
+        }
+      }
+      for (int i = 0; i < (*relatedAttrHeight)[tableIdx].size(); i++)
+      {
+        cout << (*relatedAttrHeight)[tableIdx][i] << ",";
+      }
+      cout << endl;
+    }
+  }
+  
+}
+
+
+
+
+
+
 void hasOutputAttr(bool *hasOuts, vector<int> tableHas){
   for (int i = 0; i < tableHas.size(); i++) hasOuts[tableHas[i]] = true;
   return;
+}
+
+
+
+bool allNeighbourInTree(vector<int> neighbour, bool *inTree){
+  for (int i = 0; i < neighbour.size(); i++){
+    int nodeIdx = neighbour[i];
+    if (!inTree[nodeIdx]) return false;
+  }
+  return true;
+}
+
+
+
+void constructTree(MNode *node, MTree *tree, unordered_map<int, vector<int>> linkGraph, bool *inTree, bool *hasOutAttr){
+  vector<int> neighbour = linkGraph[node->element];
+  bool allInTree = allNeighbourInTree(neighbour, inTree);
+  if (allInTree) return;
+  else{
+    for (int i = 0; i < neighbour.size(); i++){
+      if (!inTree[neighbour[i]]){
+        MNode *node2 = new MNode;
+        node2->element = neighbour[i];
+        node2->tag = hasOutAttr[node2->element];
+        tree->putChild(node2, node);
+        inTree[node2->element] = true;
+      }
+    }
+    vector<MNode*> children = node->children;
+    for (int i = 0; i < children.size(); i++){
+      constructTree(children[i], tree, linkGraph, inTree, hasOutAttr);
+    }
+  }
+}
+
+
+
+
+unordered_map<string, string> loadTemplateTree(){
+  unordered_map<string, string> templateTreeMap;
+  ifstream myfile("templateTree.txt");
+  if (!myfile.is_open())
+  {
+    cout << "can not open this file" << endl;
+    return templateTreeMap;
+  }
+  string str = "";
+  while (myfile.good() && !myfile.eof()) {
+    myfile >> str;
+    for (int i = 0; i < str.length(); i++)
+    {
+      if (str[i] == ':'){
+        string key = str.substr(0, i);
+        string value = str.substr(i + 1, str.length());
+        templateTreeMap.insert(make_pair(key, value));
+      }
+    }
+  }
+  myfile.close();
+  return templateTreeMap;
+}
+
+
+
+
+void tree2String(MNode *root, string *outTreeStr){
+  (*outTreeStr) += to_string(root->element);
+  vector<MNode *> nodes = root->children;
+  if (nodes.size() > 0) (*outTreeStr) += "C";
+  for (int i = 0; i < nodes.size(); ++i) {
+    if (nodes[i]->children.size() > 0)
+      tree2String(nodes[i], outTreeStr);
+    else {
+      (*outTreeStr) += to_string(nodes[i]->element);
+    }
+  }
+}
+
+
+
+
+bool isSameTree(string templateTree, string tree){
+  if (templateTree.length() != tree.length()) return false;
+  for (int i = 0; i < tree.length(); i++){
+    if (templateTree[i] == 'C' || tree[i] == 'C'){
+      if (templateTree[i] != tree[i]) return false;
+    }  
+  }
+  return true;
 }
 
 
@@ -276,13 +441,26 @@ void hasOutputAttr(bool *hasOuts, vector<int> tableHas){
 int main(){
 
 
-  std::string query = "SELECT O_ORDERKEY, SUM(L_EXTENDEDPRICE*(1-L_DISCOUNT)) AS REVENUE,O_ORDERDATE, O_SHIPPRIORITY FROM CUSTOMER, ORDERS, LINEITEM WHERE C_MKTSEGMENT = 'AUTOMOBILE' AND C_CUSTKEY = O_CUSTKEY AND L_ORDERKEY = O_ORDERKEY AND O_ORDERDATE < '1995-03-13' AND L_SHIPDATE > '1995-03-13' GROUP BY O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY";
+  std::string query = "SELECT O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY, SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT)) AS REVENUE FROM CUSTOMER, ORDERS, LINEITEM WHERE C_MKTSEGMENT = 'AUTOMOBILE' AND C_CUSTKEY = O_CUSTKEY AND L_ORDERKEY = O_ORDERKEY AND O_ORDERDATE < DATE '1995-03-13' AND L_SHIPDATE > DATE '1995-03-13' GROUP BY O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY;";
 
   // parse a given query
   hsql::SQLParserResult result;
   hsql::SQLParser::parse(query, &result);
 
+  /*
+  if (result.isValid()) {
+    printf("Parsed successfully!\n");
+    printf("Number of statements: %lu\n", result.size());
+
+    for (auto i = 0u; i < result.size(); ++i) {
+      // Print a statement summary.
+      hsql::printStatementInfo(result.getStatement(i));
+    }
+    return 0;
+  }
+  */
   auto result_vct = (const SelectStatement *)result.getStatement(0);
+  
 
   // Obtain the tables in the query
   auto tableList = result_vct->fromTable;
@@ -296,6 +474,19 @@ int main(){
     cout << tables[i] << endl;
   }
 
+  vector<int> tableLstIdx;
+  vector<int> *pTableLstIdx = &tableLstIdx;
+
+  cout << endl << "Table Index List: " << endl;
+  getIdx(pTableLstIdx, tables);
+  for (int i = 0; i < tableLstIdx.size(); i++){
+    cout << tableLstIdx[i] << ", ";
+  }
+  cout << endl;
+
+
+  unordered_map<int, vector<string>> relatedAttr;
+  unordered_map<int, vector<string>> *pRelatedAttr = &relatedAttr;
 
   // Obtain the output attributes in the query
   vector<string> columnExp;
@@ -305,9 +496,12 @@ int main(){
     if (expr->type == kExprColumnRef){
       string str = expr->name;
       columnExp.push_back(str);
+      int expIdx = getAttrIdx(str);
+      constructRelatedAttr(pRelatedAttr, expIdx, str);
     }
     else operationExp.push_back(expr);
   }
+  
 
   cout << endl << "Output Column Attributes:" <<endl;
   for (int i = 0; i < columnExp.size(); i++){
@@ -342,7 +536,7 @@ int main(){
 
   cout << endl << "Output Where Clause:" <<endl;
   for (int i = 0; i < (*whereRst).size(); i++){
-    cout << (*whereRst)[i] << endl;
+    //cout << (*whereRst)[i] << endl;
     if ((*whereRst)[i] == "=")
     {
       if ((*whereRst)[i+1][0] != '\'' && (*whereRst)[i+2][0] != '\''){
@@ -350,8 +544,11 @@ int main(){
         string exp2 = (*whereRst)[i+2];
         int exp1Idx = getAttrIdx(exp1);
         int exp2Idx = getAttrIdx(exp2);
+        cout << "(" << exp1Idx << ", " << exp2Idx << ")" << endl;
         constructLinkGraph(&linkGraph, exp1Idx, exp2Idx);
         constructLinkGraph(&linkGraph, exp2Idx, exp1Idx);
+        constructRelatedAttr(pRelatedAttr, exp1Idx, exp1);
+        constructRelatedAttr(pRelatedAttr, exp2Idx, exp2);
       }
     }
   }
@@ -368,22 +565,12 @@ int main(){
     cout << groupByColumn[i] << endl;
   }
 
-  vector<int> tableLstIdx;
-  vector<int> *pTableLstIdx = &tableLstIdx;
-
-  cout << endl << "Table Index List: " << endl;
-  getIdx(pTableLstIdx, tables);
-  for (int i = 0; i < tableLstIdx.size(); i++){
-    cout << tableLstIdx[i] << ", ";
-  }
-  cout << endl;
-
 
   vector<int> tableHas;
   vector<int> *pTableHas = &tableHas;
 
   cout << endl << "Table Has: ";
-  getAttrIdx(pTableHas, groupByColumn);
+  getAttrIdx(pTableHas, columnExp);
   for (int i = 0; i < tableHas.size(); i++){
     cout << tableHas[i] << ", ";
   }
@@ -421,6 +608,24 @@ int main(){
   cout << endl;
 
 
+
+  unordered_map<string, string> templateTreeMap = loadTemplateTree();
+  cout << endl << "Template Tree: " << endl;
+  for(auto it = templateTreeMap.begin(); it != templateTreeMap.end(); it++){
+      cout << it->first << ": " << it->second << endl;
+  }
+
+
+  //unordered_map<string, int> linkHasHeight;
+  //unordered_map<string, int> *pLinkHasHeight = &linkHasHeight;
+  unordered_map<int, vector<int>> relatedAttrHeight;
+  unordered_map<int, vector<int>> *pRelatedAttrHeight = &relatedAttrHeight;
+  getAttrHeight("2C13", pRelatedAttr, pRelatedAttrHeight);
+
+
+
+
+
   cout << endl;
   for (int i = 0; i < tableSize; i++)
   {
@@ -432,26 +637,30 @@ int main(){
     node->tag = hasOutAttr[node->element];
     tree->init(node);
     inTree[node->element] = true;
-    vector<int> neighbour = linkGraph[node->element];
-    for (int i = 0; i < neighbour.size(); i++)
-    {
-      if (!inTree[neighbour[i]]){
-        MNode *node2 = new MNode;
-        node2->element = neighbour[i];
-        node2->tag = hasOutAttr[node2->element];
-        tree->putChild(node2, node);
-        inTree[node2->element] = true;
-      }
-    }
+    constructTree(node, tree, linkGraph, inTree, hasOutAttr);
     tree->tranversal();
     cout << endl;
     if (tree->isFreeConnex()){
+      bool same2template = false;
       cout << "true!" << endl;
-      break;
+      string outTreeStr;
+      string *pOutTreeStr = &outTreeStr;
+      tree2String(node, pOutTreeStr);
+      cout << "free connex to string: " << outTreeStr << endl;
+      for(auto it = templateTreeMap.begin(); it != templateTreeMap.end(); it++){
+        same2template = isSameTree(it->second, outTreeStr);
+        if (same2template){
+          cout << "Same to template " << it->first << endl;
+          break;
+        }
+      }
+      if (same2template) break;
     }
     else
       cout << "false!" << endl;
   }
+
+
 
 }
 
