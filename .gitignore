@@ -1,0 +1,5 @@
+.vscode/
+.DS_Store
+autogen/.DS_Store
+autogen/main
+SECYAN/Release
