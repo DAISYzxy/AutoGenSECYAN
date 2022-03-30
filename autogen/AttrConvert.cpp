@@ -120,7 +120,6 @@ void linkageIsOutputed(unordered_map<string bool> *linkIsOut, unordered_map<int,
     for (int i = 0; i < tmpRelated.size(); i++){
       string attr = tmpRelated[i];
       string attrTail = getTail(attr);
-      
     }
   }
 }
