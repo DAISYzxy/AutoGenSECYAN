@@ -14,5 +14,3 @@ using namespace std;
 
 
 // construct table related attr -> link to SECYAN
-
-void getAttrHeight(string strTree, unordered_map<int, vector<string>> *relatedAttr, unordered_map<int, vector<int>> *relatedAttrHeight);

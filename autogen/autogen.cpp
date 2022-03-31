@@ -103,16 +103,16 @@ int main(){
   }
 
   vector<string> outputList;
-  vector<string> *outputOp = &outputList;
+  vector<string> *pOutputList = &outputList;
   for (int i = 0; i < operationExp.size(); i++){
     Expr* tmpExpr = operationExp[i];
     // cout << "tmpExpr is " << tmpExpr->type << "." << endl;
-    normalExpr(tmpExpr, outputOp);
+    normalExpr(tmpExpr, pOutputList);
   }
 
   cout << endl << "Output Operations:" <<endl;
-  for (int i = 0; i < (*outputOp).size(); i++){
-    cout << (*outputOp)[i] << endl;
+  for (int i = 0; i < (*pOutputList).size(); i++){
+    cout << (*pOutputList)[i] << endl;
   }
 
 
@@ -210,15 +210,6 @@ int main(){
   }
 
 
-  //unordered_map<string, int> linkHasHeight;
-  //unordered_map<string, int> *pLinkHasHeight = &linkHasHeight;
-  unordered_map<int, vector<int>> relatedAttrHeight;
-  unordered_map<int, vector<int>> *pRelatedAttrHeight = &relatedAttrHeight;
-  getAttrHeight("2C13", pRelatedAttr, pRelatedAttrHeight);
-
-
-
-
 
   cout << endl;
   for (int i = 0; i < tableSize; i++)
@@ -234,13 +225,32 @@ int main(){
     constructTree(node, tree, linkGraph, inTree, hasOutAttr);
     tree->tranversal();
     cout << endl;
-    if (tree->isFreeConnex()){
-      bool same2template = false;
-      cout << "true!" << endl;
-      string outTreeStr;
-      string *pOutTreeStr = &outTreeStr;
-      tree2String(node, pOutTreeStr);
-      cout << "free connex to string: " << outTreeStr << endl;
+    bool same2template = false;
+    string outTreeStr;
+    string *pOutTreeStr = &outTreeStr;
+    tree2String(node, pOutTreeStr);
+    unordered_map<int, vector<int>> relatedAttrHeight;
+    unordered_map<int, vector<int>> *pRelatedAttrHeight = &relatedAttrHeight;
+    getAttrHeight(outTreeStr, pRelatedAttr, pRelatedAttrHeight);
+    vector<string> linkIsOut;
+    vector<string> *pLinkIsOut = &linkIsOut;
+    vector<string> *pColumnOut = &columnExp;
+    linkageIsOutputed(pLinkIsOut, pRelatedAttr, pColumnOut);
+
+    cout << endl << "Construct Attribute Height Map: " << endl;
+    constructAttrHeightMap(outTreeStr, pRelatedAttr, pRelatedAttrHeight, pColumnOut, pLinkIsOut);
+
+    for(auto it = relatedAttrHeight.begin(); it != relatedAttrHeight.end(); it++){
+        cout << it->first << ": ";
+        for (int i = 0; i < relatedAttrHeight[it->first].size(); i++){
+          cout << relatedAttrHeight[it->first][i] << ",";
+        }
+        cout << endl;
+    }
+
+    bool isFreeConnexTree = isFreeConnex(outTreeStr, pRelatedAttrHeight);
+    if (isFreeConnexTree){
+      cout << endl << "Free Connex!!!" << endl;
       for(auto it = templateTreeMap.begin(); it != templateTreeMap.end(); it++){
         same2template = isSameTree(it->second, outTreeStr);
         if (same2template){
@@ -250,11 +260,8 @@ int main(){
       }
       if (same2template) break;
     }
-    else
-      cout << "false!" << endl;
+    else cout << endl << "Not a free connex" << endl;
   }
-
-
-
+  return 0;
 }
 

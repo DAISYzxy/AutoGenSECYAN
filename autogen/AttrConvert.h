@@ -13,7 +13,9 @@
 using namespace std;
 
 
-static const map<const string, const string> linkKey = {
+static const string linkKey[4] = {"CUSTKEY", "ORDERKEY", "PARTKEY", "SUPPKEY"};
+
+static const map<const string, const string> linkage = {
   {"12", "CUSTKEY"}, {"23", "ORDERKEY"}, {"34", "PARTKEY"}, {"35", "SUPPKEY"}, {"36", "SUPPKEY_PARTKEY"}
 };
 
@@ -26,6 +28,13 @@ string getTail(string attrName);
 
 // LinkGraph functions
 void hasOutputAttr(bool *hasOuts, vector<int> tableHas);
+bool attrIsIn(string attrName, vector<string> *outputAttr);
+bool attrIsIn(string attrName, vector<string> *outputAttr, vector<string> *linkIsOut);
 void constructLinkGraph(unordered_map<int, vector<int>> *linkGraph, int exp1Idx, int exp2Idx);
 void constructRelatedAttr(unordered_map<int, vector<string>> *relatedAttr, int expIdx, string attrName);
-void linkageIsOutputed(unordered_map<string bool> *linkIsOut, unordered_map<int, vector<string>> *relatedAttr);
+void linkageIsOutputed(vector<string> *linkIsOut, unordered_map<int, vector<string>> *relatedAttr, vector<string> *outputAttr);
+void getAttrHeight(string strTree, unordered_map<int, vector<string>> *relatedAttr, unordered_map<int, vector<int>> *relatedAttrHeight);
+void constructAttrHeightMap(string treeString, unordered_map<int, vector<string>> *relatedAttr, unordered_map<int, vector<int>> *relatedAttrHeight, vector<string> *outputAttr, vector<string> *linkIsOut);
+bool isFreeConnex(string treeString, unordered_map<int, vector<int>> *relatedAttrHeight);
+
+

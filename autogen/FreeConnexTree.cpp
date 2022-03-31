@@ -49,44 +49,6 @@ int MTree::getMaxDepth(MNode *root,vector<MNode*> nodes) {
 }
 
 
-bool MTree::isFreeConnex(){
-  queue<MNode*> q1, q2;
-  if (!this->root->tag){
-    return false;
-  }
-  else{
-    q1.push(this->root);
-    int lastLayerFlag = 1;
-    return(this->isFreeConnex(lastLayerFlag, &q1, &q2));
-  }
-}
-
-
-bool MTree::isFreeConnex(int lastLayerFlag, queue<MNode*> *q1, queue<MNode*> *q2) {
-  // cout << "q1's size: "<< (*q1).size() << endl;
-  if ((*q1).size() == 0)
-    return true;
-  MNode *first = (*q1).front();
-  int thisLayerFlag = first->tag;
-  if (lastLayerFlag == 0 && thisLayerFlag == 1){
-    return false;
-  }
-  for (int i = 0; i < first->children.size(); i++){
-    q2->push(first->children[i]);
-  }
-  (*q1).pop();
-  while ((*q1).size() > 0){
-    MNode* tmp = (*q1).front();
-    if (int(tmp->tag) != thisLayerFlag)
-      return false;
-    for (int i = 0; i < tmp->children.size(); i++){
-      q2->push(tmp->children[i]);
-    }
-    (*q1).pop();
-  }
-  return isFreeConnex(thisLayerFlag, q2, q1);
-}
-
 
 unordered_map<string, string> loadTemplateTree(){
   unordered_map<string, string> templateTreeMap;

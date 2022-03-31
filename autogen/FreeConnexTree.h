@@ -32,8 +32,6 @@ class MTree {
   void tranversal(MNode *root);
   void tranversal();
   int getMaxDepth(MNode *root,vector<MNode*> nodes);
-  bool isFreeConnex();
-  bool isFreeConnex(int LastLayerFlag, queue<MNode*> *q1, queue<MNode*> *q2);
 };
 
 // construct tree with linkGraph
