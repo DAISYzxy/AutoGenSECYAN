@@ -35,7 +35,7 @@ using namespace hsql;
 int main(){
 
 
-  std::string query = "SELECT O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY, SUM(L_EXTENDEDPRICE * (1 - L_DISCOUNT)) AS REVENUE FROM CUSTOMER, ORDERS, LINEITEM WHERE C_MKTSEGMENT = 'AUTOMOBILE' AND C_CUSTKEY = O_CUSTKEY AND L_ORDERKEY = O_ORDERKEY AND O_ORDERDATE < DATE '1995-03-13' AND L_SHIPDATE > DATE '1995-03-13' GROUP BY O_ORDERKEY, O_ORDERDATE, O_SHIPPRIORITY;";
+  std::string query = "select o_orderkey, o_orderdate, o_shippriority, sum(l_extendedprice * (1 - l_discount)) as revenue from customer, orders, lineitem where c_mktsegment = 'automobile' and c_custkey = o_custkey and l_orderkey = o_orderkey and o_orderdate < date '1995-03-13' and l_shipdate > date '1995-03-13' group by o_orderkey, o_orderdate, o_shippriority;";
 
   // parse a given query
   hsql::SQLParserResult result;

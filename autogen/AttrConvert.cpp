@@ -29,7 +29,7 @@ void constructRelatedAttr(unordered_map<int, vector<string>> *relatedAttr, int e
 
 
 void getIdx(vector<int> *tableLstIdx, vector<string> retrieveStr){
-  string tableDict[6] = {"CUSTOMER", "ORDERS", "LINEITEM", "PART", "SUPPLIER", "PARTSUPP"};
+  string tableDict[6] = {"customer", "orders", "lineitem", "part", "supplier", "partsupp"};
   for (int j = 0; j < retrieveStr.size(); j++){
     for (int i = 0; i < 6; i++){
       if (retrieveStr[j] == tableDict[i]){
@@ -43,12 +43,12 @@ void getIdx(vector<int> *tableLstIdx, vector<string> retrieveStr){
 
 
 void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
-  char prefixDict[5] = {'C', 'O', 'L', 'P', 'S'};
+  char prefixDict[5] = {'c', 'o', 'l', 'p', 's'};
   for (int i = 0; i < groupBy.size(); i++)
   {
     char prefix = groupBy[i][0];
     char prefix2 = groupBy[i][1];
-    if (prefix == 'P' && prefix2 == 'S'){
+    if (prefix == 'p' && prefix2 == 's'){
       (*tableHas).push_back(6);
     }
 
@@ -67,10 +67,10 @@ void getAttrIdx(vector<int> *tableHas, vector<string> groupBy){
 
 
 int getAttrIdx(string exp){
-  char prefixDict[5] = {'C', 'O', 'L', 'P', 'S'};
+  char prefixDict[5] = {'c', 'o', 'l', 'p', 's'};
   char prefix = exp[0];
   char prefix2 = exp[1];
-  if (prefix == 'P' && prefix2 == 'S'){
+  if (prefix == 'p' && prefix2 == 's'){
     return 6;
   }
 
