@@ -85,7 +85,7 @@ static const map<const string, const Relation::DataType> attrName2Datatype = {
 
 
 
-
+/*
 void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, string treeString)
 {
 
@@ -126,4 +126,4 @@ void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, s
 	orders.RevealAnnotToOwner();
 	if (printResult)
 		orders.Print();
-}
+}*/

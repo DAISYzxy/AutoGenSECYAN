@@ -11,7 +11,7 @@
 # include <unordered_map>
 
 // #include "../SECYAN/src/example/TPCH.h"
-#include "../SECYAN/core/relation.h"
+#include "core/relation.h"
 #include <vector>
 #include <string>
 #include <iostream>

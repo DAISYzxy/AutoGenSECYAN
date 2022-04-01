@@ -1,7 +1,10 @@
-.vscode/
-.DS_Store
-autogen/.DS_Store
+# Build Directory
+build
 autogen/main
 autogen/build
+SECYAN/build
 
-
+# Others
+.vscode
+.DS_Store
+autogen/.DS_Store

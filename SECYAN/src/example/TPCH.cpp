@@ -41,11 +41,11 @@ std::string filename[] = {
 	"partsupp.tbl"};
 
 std::string datapath[] = {
-	"../../../data/1MB/",
-	"../../../data/3MB/",
-	"../../../data/10MB/",
-	"../../../data/33MB/",
-	"../../../data/100MB/"};
+	"../../../../SECYAN/data/1MB/",
+	"../../../../SECYAN/data/3MB/",
+	"../../../../SECYAN/data/10MB/",
+	"../../../../SECYAN/data/33MB/",
+	"../../../../SECYAN/data/100MB/"};
 
 inline Relation::RelationInfo GetRI(RelationName rn, QueryName qn, DataSize ds, e_role owner)
 {

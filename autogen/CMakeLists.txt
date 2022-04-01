@@ -1,14 +1,7 @@
-# minimum version of cmake
-cmake_minimum_required (VERSION 3.1)
-
-# project name
-project (AutoGenSECYAN)
-
-set (CMAKE_CXX_STANDARD 11)
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
-set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -lstdc++ -Wall")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++1z -lstdc++")
 
-set(INC_DIR ../sql-parser/src/)
+set(INC_DIR ../sql-parser/src/ ../SECYAN/src)
 set(LINK_DIR ../sql-parser/ /usr/local/lib)
 include_directories(${INC_DIR})
 link_directories(${LINK_DIR})
@@ -20,4 +13,21 @@ find_library(RUNTIME_LIB sqlparser ${LINK_DIR})
 link_libraries(sqlparser)
 
 add_executable(main autogen.cpp)
-target_link_libraries(main common sqlparser)
+
+target_link_libraries(common INTERFACE
+        ABY::aby
+        libOTe
+        relic_s
+        )
+
+target_include_directories(common PUBLIC
+        ../SECYAN/extern/ABY/src/abycore
+        ../SECYAN/extern/ABY/extern/ENCRYPTO_utils/src
+        ../SECYAN/extern/libOTe/cryptoTools
+        ../SECYAN/extern/libOTe/
+        )
+
+target_link_libraries(main 
+    PUBLIC secyan 
+    common 
+    sqlparser)
