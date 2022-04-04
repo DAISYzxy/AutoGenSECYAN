@@ -35,8 +35,8 @@ using namespace hsql;
 int main(){
 
 
-  std::string query = "select o_orderkey, o_orderdate, o_shippriority, sum(l_extendedprice * (1 - l_discount)) as revenue from customer, orders, lineitem where c_mktsegment = 'automobile' and c_custkey = o_custkey and l_orderkey = o_orderkey and o_orderdate < date '1995-03-13' and l_shipdate > date '1995-03-13' group by o_orderkey, o_orderdate, o_shippriority;";
-
+  std::string query = "select o_orderkey, o_totalprice, o_orderdate, o_shippriority, sum(l_extendedprice * (1 - l_discount)) as revenue from customer, orders, lineitem where c_mktsegment = 'automobile' and c_custkey = o_custkey and l_orderkey = o_orderkey and o_orderdate < date '1995-03-13' and l_shipdate > date '1995-03-13' group by o_orderkey, o_totalprice, o_orderdate, o_shippriority;";
+  
   // parse a given query
   hsql::SQLParserResult result;
   hsql::SQLParser::parse(query, &result);
@@ -188,7 +188,7 @@ int main(){
 
   int tableSize = tableLstIdx.size();
   bool *inTree = new bool[tableSize + 1];
-  for (int i = 0; i < tableSize + 1; i++) inTree[i] = false;
+  for (int i = 0; i < 7; i++) inTree[i] = false;
 
   bool *hasOutAttr = new bool[tableSize + 1];
   for (int i = 0; i < tableSize + 1; i++) hasOutAttr[i] = false;
@@ -210,13 +210,13 @@ int main(){
   }
 
 
-
+  bool findTag = false;
   string templateTree;
-  string outTreeStr;
+  string finalTree;
   cout << endl;
   for (int i = 0; i < tableSize; i++)
   {
-    for (int i = 0; i < tableSize + 1; i++) inTree[i] = false;
+    for (int j = 0; j < 7; j++) inTree[j] = false;
     MNode *node = new MNode;
     MTree *tree = new MTree;
     node->Parent = nullptr;
@@ -228,6 +228,7 @@ int main(){
     tree->tranversal();
     cout << endl;
     bool same2template = false;
+    string outTreeStr;
     string *pOutTreeStr = &outTreeStr;
     tree2String(node, pOutTreeStr);
     unordered_map<int, vector<int>> relatedAttrHeight;
@@ -260,12 +261,19 @@ int main(){
           break;
         }
       }
-      if (same2template) break;
+      if (same2template){
+        finalTree = outTreeStr;
+        findTag = true;
+        break;
+      }
     }
     else{
       cout << endl << "Not a free connex" << endl;
-      return 0;
     }
+  }
+
+  if (!findTag){
+    return 0;
   }
 
   int irole, iqn, ids;
@@ -297,7 +305,7 @@ int main(){
     ds = (DataSize)ids;
     cout << "Start running query..." << endl;
     gParty.Tick("Running time");
-    run_TemplateQ3(ds, true, groupByColumn, outTreeStr, relatedAttr);
+    run_TemplateQ3(ds, true, groupByColumn, finalTree, relatedAttr);
     gParty.Tick("Running time");
     auto cost = gParty.GetCommCostAndResetStats();
     cout << "Communication cost: " << cost / 1024 / 1024.0 << " MB" << endl;

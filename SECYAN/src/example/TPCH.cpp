@@ -72,13 +72,14 @@ void run_Q3(DataSize ds, bool printResult)
 	Relation customer(cust_ri, cust_ai);
 	auto filePath = GetFilePath(CUSTOMER, ds);
 	customer.LoadData(filePath.c_str(), "q3_annot");
+	customer.Print();
 
 	auto orders_ri = GetRI(ORDERS, Q3, ds, CLIENT);
 	Relation::AnnotInfo orders_ai = {true, true};
 	Relation orders(orders_ri, orders_ai);
 	filePath = GetFilePath(ORDERS, ds);
 	orders.LoadData(filePath.c_str(), "q3_annot");
-	//orders.Print();
+	orders.Print();
 
 	auto lineitem_ri = GetRI(LINEITEM, Q3, ds, SERVER);
 	Relation::AnnotInfo lineitem_ai = {false, true};
@@ -86,6 +87,7 @@ void run_Q3(DataSize ds, bool printResult)
 	filePath = GetFilePath(LINEITEM, ds);
 	lineitem.LoadData(filePath.c_str(), "q3_annot");
 	lineitem.Aggregate();
+	lineitem.Print();
 
 	orders.SemiJoin(customer, "o_custkey", "c_custkey");
 	//orders.PrintTableWithoutRevealing("orders semijoin customer");

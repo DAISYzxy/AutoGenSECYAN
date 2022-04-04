@@ -103,6 +103,10 @@ void constructLinkGraph(unordered_map<int, vector<int>> *linkGraph, int exp1Idx,
     (*linkGraph).insert(make_pair(exp1Idx, neighbourLink));
   }
   else{
+    vector<int> neighbourLink = (*linkGraph)[exp1Idx];
+    for (int i = 0; i < neighbourLink.size(); i++){
+      if (neighbourLink[i] == exp2Idx) return;
+    }
     (*linkGraph)[exp1Idx].push_back(exp2Idx);
   }
   return;

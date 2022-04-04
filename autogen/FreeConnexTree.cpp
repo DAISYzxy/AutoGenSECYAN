@@ -52,7 +52,7 @@ int MTree::getMaxDepth(MNode *root,vector<MNode*> nodes) {
 
 unordered_map<string, string> loadTemplateTree(){
   unordered_map<string, string> templateTreeMap;
-  ifstream myfile("templateTree.txt");
+  ifstream myfile("../autogen/templateTree.txt");
   if (!myfile.is_open())
   {
     cout << "can not open this file" << endl;

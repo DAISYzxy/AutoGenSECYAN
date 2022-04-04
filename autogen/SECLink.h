@@ -21,6 +21,7 @@
 #include <cstdint>
 
 using namespace SECYAN;
+using namespace std;
 
 enum RelationName
 {

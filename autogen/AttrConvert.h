@@ -13,11 +13,8 @@
 using namespace std;
 
 
-static const string linkKey[4] = {"CUSTKEY", "ORDERKEY", "PARTKEY", "SUPPKEY"};
+static const string linkKey[4] = {"custkey", "orderkey", "partkey", "suppkey"};
 
-static const map<const string, const string> linkage = {
-  {"12", "CUSTKEY"}, {"23", "ORDERKEY"}, {"34", "PARTKEY"}, {"35", "SUPPKEY"}, {"36", "SUPPKEY_PARTKEY"}
-};
 
 
 // get sql query attr index

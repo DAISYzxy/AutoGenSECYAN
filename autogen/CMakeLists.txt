@@ -15,6 +15,7 @@ link_libraries(sqlparser)
 add_executable(main autogen.cpp)
 
 target_link_libraries(common INTERFACE
+        PUBLIC secyan
         ABY::aby
         libOTe
         relic_s

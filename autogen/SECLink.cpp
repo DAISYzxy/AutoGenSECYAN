@@ -1,7 +1,7 @@
 # include "SECLink.h"
 
-using namespace std;
 using namespace SECYAN;
+using namespace std;
 
 
 size_t NumRows[RTOTAL][DTOTAL] = {
@@ -27,11 +27,11 @@ std::string filename[] = {
 
 
 std::string newDatapath[] = {
-	"../../SECYAN/data/1MB/",
-	"../../SECYAN/data/3MB/",
-	"../../SECYAN/data/10MB/",
-	"../../SECYAN/data/33MB/",
-	"../../SECYAN/data/100MB/"};
+	"../SECYAN/data/1MB/",
+	"../SECYAN/data/3MB/",
+	"../SECYAN/data/10MB/",
+	"../SECYAN/data/33MB/",
+	"../SECYAN/data/100MB/"};
 
 
 
@@ -49,22 +49,22 @@ inline Relation::RelationInfo GetTemplateRI(RelationName rn, DataSize ds, e_role
 
 
 
-inline std::string newGetFilePath(RelationName rn, DataSize ds)
+inline std::string GetFilePath(RelationName rn, DataSize ds)
 {
 	return newDatapath[ds] + filename[rn];
 }
 
 
 
-static const map<const int, const RelationName> idx2RelationName = {
+map<int, RelationName> idx2RelationName = {
   {1, CUSTOMER}, {2, ORDERS}, {3, LINEITEM}, {4, PART}, {5, SUPPLIER}, {6, PARTSUPP}};
 
 
-static const map<const int, const e_role> idx2Role = {
+map<int, e_role> idx2Role = {
   {1, SERVER}, {2, CLIENT}, {3, SERVER}, {4, CLIENT}, {5, CLIENT}, {6, CLIENT}};
 
 
-static const map<const string, const Relation::DataType> attrName2Datatype = {
+map<string, Relation::DataType> attrName2Datatype = {
   {"o_orderkey", Relation::INT}, {"o_custkey", Relation::INT}, {"o_orderdate", Relation::DATE}, {"o_shippriority", Relation::STRING},
   {"o_totalprice", Relation::DECIMAL}, {"o_year", Relation::INT}, {"o_orderstatus", Relation::INT}, {"o_priority", Relation::STRING},
   {"o_clerk", Relation::STRING}, {"o_comment", Relation::STRING},
@@ -85,7 +85,7 @@ static const map<const string, const Relation::DataType> attrName2Datatype = {
 
 
 
-static const map<const int, const bool> idx2AnnotInfo = {
+map<int, bool> idx2AnnotInfo = {
   {1, true}, {2, true}, {3, false}, {4, true}, {5, true}, {6, false}};
 
 
@@ -97,11 +97,13 @@ void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, s
 {
   // treeString: 2C13 -> 2, 1, 3
   // 2 -> create ORDERS table
+  //std::cout << std::endl << "Table Index:" << std::endl;
   vector<int> tableIdx;
   for (int i = 0; i < treeString.length(); i++){
     if (treeString[i] != 'C'){
-      int newTableIdx = treeString[i];
+      int newTableIdx = int(treeString[i]) - int('0');;
       tableIdx.push_back(newTableIdx);
+      //std::cout << newTableIdx << std::endl;
     }
   }
 
@@ -115,20 +117,28 @@ void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, s
   RelationName rn1 = idx2RelationName[tableIdx1];
   e_role owner1 = idx2Role[tableIdx1];
   auto table1_ri = GetTemplateRI(rn1, ds, owner1, tableAttr1, attrTypes1);
-  bool secondInAI = idx2AnnotInfo[tableIdx1];
-  Relation::AnnotInfo table1_ai = {true, secondInAI};
+  bool firstInAI1 = idx2AnnotInfo[tableIdx1];
+  Relation::AnnotInfo table1_ai = {firstInAI1, true};
   Relation table1(table1_ri, table1_ai);
-  auto filePath = GetFilePath(rn1, ds);
-  if (tableIdx1 == 2) table1.LoadData(filePath.c_str(), "q3_annot");
+  auto filePath1 = GetFilePath(rn1, ds);
+  if (tableIdx1 == 2) table1.LoadData(filePath1.c_str(), "q3_annot");
   if (tableIdx1 == 3){
     if (tableIdx[1] == 6 || tableIdx[2] == 6){
-      table1.LoadData(filePath.c_str(), "q9_annot2");
+      table1.LoadData(filePath1.c_str(), "q9_annot2");
     }
     else{
-      table1.LoadData(filePath.c_str(), "q3_annot");
-      if (!secondInAI) table1.Aggregate();
+      table1.LoadData(filePath1.c_str(), "q3_annot");
+      if (!firstInAI1) table1.Aggregate();
     }
   }
+  
+  /*
+  std::cout << "Table1 Name:" << tableIdx1 << std::endl;
+  std::cout << "Table1 second boolean:" << firstInAI1 << std::endl;
+  std::cout << "Table1 related Attr:" << std::endl;
+  for (int i = 0; i < tableAttr1.size(); i++){
+    std::cout << tableAttr1[i] << std::endl;
+  }*/
 
 
 
@@ -141,15 +151,15 @@ void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, s
   RelationName rn2 = idx2RelationName[tableIdx2];
   e_role owner2 = idx2Role[tableIdx2];
   auto table2_ri = GetTemplateRI(rn2, ds, owner2, tableAttr2, attrTypes2);
-  bool secondInAI = idx2AnnotInfo[tableIdx2];
-  Relation::AnnotInfo table2_ai = {true, secondInAI};
+  bool firstInAI2 = idx2AnnotInfo[tableIdx2];
+  Relation::AnnotInfo table2_ai = {firstInAI2, true};
   Relation table2(table2_ri, table2_ai);
-  auto filePath = GetFilePath(rn2, ds);
-  if (tableIdx2 <= 3) table2.LoadData(filePath.c_str(), "q3_annot");
-  if (tableIdx2 == 4) table2.LoadData(filePath.c_str(), "q8_annot1");
-  if (tableIdx2 == 5) table2.LoadData(filePath.c_str(), "q9_annot");
-  if (tableIdx2 == 6) table2.LoadData(filePath.c_str(), "q9_annot2");
-  if (!secondInAI) table2.Aggregate();
+  auto filePath2 = GetFilePath(rn2, ds);
+  if (tableIdx2 <= 3) table2.LoadData(filePath2.c_str(), "q3_annot");
+  if (tableIdx2 == 4) table2.LoadData(filePath2.c_str(), "q8_annot1");
+  if (tableIdx2 == 5) table2.LoadData(filePath2.c_str(), "q9_annot");
+  if (tableIdx2 == 6) table2.LoadData(filePath2.c_str(), "q9_annot2");
+  if (!firstInAI2) table2.Aggregate();
 
 
 
@@ -163,20 +173,26 @@ void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, s
   RelationName rn3 = idx2RelationName[tableIdx3];
   e_role owner3 = idx2Role[tableIdx3];
   auto table3_ri = GetTemplateRI(rn3, ds, owner3, tableAttr3, attrTypes3);
-  bool secondInAI = idx2AnnotInfo[tableIdx3];
-  Relation::AnnotInfo table3_ai = {true, secondInAI};
+  bool firstInAI3 = idx2AnnotInfo[tableIdx3];
+  Relation::AnnotInfo table3_ai = {firstInAI3, true};
   Relation table3(table3_ri, table3_ai);
-  auto filePath = GetFilePath(rn3, ds);
-  if (tableIdx3 <= 3) table3.LoadData(filePath.c_str(), "q3_annot");
-  if (tableIdx3 == 4) table3.LoadData(filePath.c_str(), "q8_annot1");
-  if (tableIdx3 == 5) table3.LoadData(filePath.c_str(), "q9_annot");
-  if (tableIdx3 == 6) table3.LoadData(filePath.c_str(), "q9_annot2");
-  if (!secondInAI) table3.Aggregate();
+  auto filePath3 = GetFilePath(rn3, ds);
+  if (tableIdx3 <= 3) table3.LoadData(filePath3.c_str(), "q3_annot");
+  if (tableIdx3 == 4) table3.LoadData(filePath3.c_str(), "q8_annot1");
+  if (tableIdx3 == 5) table3.LoadData(filePath3.c_str(), "q9_annot");
+  if (tableIdx3 == 6) table3.LoadData(filePath3.c_str(), "q9_annot2");
+  if (!firstInAI3) table3.Aggregate();
 
   
   if (tableIdx1 == 2){
-    table1.SemiJoin(table2, "o_custkey", "c_custkey");
-    table1.SemiJoin(table3, "o_orderkey", "l_orderkey");
+    if (tableIdx2 == 1){
+      table1.SemiJoin(table2, "o_custkey", "c_custkey");
+      table1.SemiJoin(table3, "o_orderkey", "l_orderkey");
+    }
+    if (tableIdx2 == 3){
+      table1.SemiJoin(table3, "o_custkey", "c_custkey");
+      table1.SemiJoin(table2, "o_orderkey", "l_orderkey");
+    }
   }
 
   if (tableIdx1 == 3){
