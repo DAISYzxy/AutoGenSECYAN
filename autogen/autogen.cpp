@@ -211,6 +211,8 @@ int main(){
 
 
 
+  string templateTree;
+  string outTreeStr;
   cout << endl;
   for (int i = 0; i < tableSize; i++)
   {
@@ -226,7 +228,6 @@ int main(){
     tree->tranversal();
     cout << endl;
     bool same2template = false;
-    string outTreeStr;
     string *pOutTreeStr = &outTreeStr;
     tree2String(node, pOutTreeStr);
     unordered_map<int, vector<int>> relatedAttrHeight;
@@ -255,13 +256,55 @@ int main(){
         same2template = isSameTree(it->second, outTreeStr);
         if (same2template){
           cout << "Same to template " << it->first << endl;
+          templateTree = it->first;
           break;
         }
       }
       if (same2template) break;
     }
-    else cout << endl << "Not a free connex" << endl;
+    else{
+      cout << endl << "Not a free connex" << endl;
+      return 0;
+    }
   }
+
+  int irole, iqn, ids;
+  string address = "127.0.0.1";
+  uint16_t port = 7766;
+  e_role role = SERVER;
+
+  cout << "Who are you? [0. Server, 1. Client]: ";
+  cin >> irole;
+  if (irole != 0 && irole != 1)
+  {
+      cerr << "Role error!" << endl;
+      exit(1);
+  }
+  role = (e_role)irole;
+
+  cout << "Establishing connection... ";
+  gParty.Init(address, port, role);
+  cout << "Finished!" << endl;
+  if (templateTree == "Q3"){
+    DataSize ds;
+    cout << "Which TPCH data size to use? [0. 1MB, 1. 3MB, 2. 10MB, 3. 33MB, 4. 100MB]: ";
+    cin >> ids;
+    if (ids < 0 || ids >= 5)
+    {
+        cerr << "Data size selection error!" << endl;
+        exit(1);
+    }
+    ds = (DataSize)ids;
+    cout << "Start running query..." << endl;
+    gParty.Tick("Running time");
+    run_TemplateQ3(ds, true, groupByColumn, outTreeStr, relatedAttr);
+    gParty.Tick("Running time");
+    auto cost = gParty.GetCommCostAndResetStats();
+    cout << "Communication cost: " << cost / 1024 / 1024.0 << " MB" << endl;
+    cout << "Finished!" << endl;
+    return 0;
+  }
+  
   return 0;
 }
 

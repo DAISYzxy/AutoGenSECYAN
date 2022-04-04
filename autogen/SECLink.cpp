@@ -14,18 +14,6 @@ size_t NumRows[RTOTAL][DTOTAL] = {
 
 
 
-inline Relation::RelationInfo GetTemplateRI(RelationName rn, QueryName qn, DataSize ds, e_role owner, vector<string> attrNames, vector<Relation::DataType> attrTypes)
-{
-	Relation::RelationInfo ri = {
-		owner,
-		false,
-		attrNames,
-		attrTypes,
-		NumRows[rn][ds],
-		false};
-	return ri;
-}
-
 
 
 std::string filename[] = {
@@ -39,11 +27,25 @@ std::string filename[] = {
 
 
 std::string newDatapath[] = {
-	"../SECYAN/data/1MB/",
-	"../SECYAN/data/3MB/",
-	"../SECYAN/data/10MB/",
-	"../SECYAN/data/33MB/",
-	"../SECYAN/data/100MB/"};
+	"../../SECYAN/data/1MB/",
+	"../../SECYAN/data/3MB/",
+	"../../SECYAN/data/10MB/",
+	"../../SECYAN/data/33MB/",
+	"../../SECYAN/data/100MB/"};
+
+
+
+inline Relation::RelationInfo GetTemplateRI(RelationName rn, DataSize ds, e_role owner, vector<string> attrNames, vector<Relation::DataType> attrTypes)
+{
+	Relation::RelationInfo ri = {
+		owner,
+		false,
+		attrNames,
+		attrTypes,
+		NumRows[rn][ds],
+		false};
+	return ri;
+}
 
 
 
@@ -83,47 +85,121 @@ static const map<const string, const Relation::DataType> attrName2Datatype = {
 
 
 
+static const map<const int, const bool> idx2AnnotInfo = {
+  {1, true}, {2, true}, {3, false}, {4, true}, {5, true}, {6, false}};
 
 
-/*
-void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, string treeString)
+
+
+
+
+void run_TemplateQ3(DataSize ds, bool printResult, vector<string> groupByList, string treeString, unordered_map<int, vector<string>> relatedAttr)
 {
+  // treeString: 2C13 -> 2, 1, 3
+  // 2 -> create ORDERS table
+  vector<int> tableIdx;
+  for (int i = 0; i < treeString.length(); i++){
+    if (treeString[i] != 'C'){
+      int newTableIdx = treeString[i];
+      tableIdx.push_back(newTableIdx);
+    }
+  }
 
-	vector<string> o_groupBy = {"o_orderkey", "o_orderdate", "o_shippriority"};
-	auto cust_ri = GetRI(CUSTOMER, Q3, ds, SERVER);
-	Relation::AnnotInfo cust_ai = {true, true};
-	Relation customer(cust_ri, cust_ai);
-	auto filePath = GetFilePath(CUSTOMER, ds);
-	customer.LoadData(filePath.c_str(), "q3_annot");
 
-	auto orders_ri = GetRI(ORDERS, Q3, ds, CLIENT);
-	Relation::AnnotInfo orders_ai = {true, true};
-	Relation orders(orders_ri, orders_ai);
-	filePath = GetFilePath(ORDERS, ds);
-	orders.LoadData(filePath.c_str(), "q3_annot");
-	//orders.Print();
+  int tableIdx1 = tableIdx[0];
+  vector<string> tableAttr1 = relatedAttr[tableIdx1];
+  vector<Relation::DataType> attrTypes1;
+  for (int i = 0; i < tableAttr1.size(); i++){
+    attrTypes1.push_back(attrName2Datatype[tableAttr1[i]]);
+  }
+  RelationName rn1 = idx2RelationName[tableIdx1];
+  e_role owner1 = idx2Role[tableIdx1];
+  auto table1_ri = GetTemplateRI(rn1, ds, owner1, tableAttr1, attrTypes1);
+  bool secondInAI = idx2AnnotInfo[tableIdx1];
+  Relation::AnnotInfo table1_ai = {true, secondInAI};
+  Relation table1(table1_ri, table1_ai);
+  auto filePath = GetFilePath(rn1, ds);
+  if (tableIdx1 == 2) table1.LoadData(filePath.c_str(), "q3_annot");
+  if (tableIdx1 == 3){
+    if (tableIdx[1] == 6 || tableIdx[2] == 6){
+      table1.LoadData(filePath.c_str(), "q9_annot2");
+    }
+    else{
+      table1.LoadData(filePath.c_str(), "q3_annot");
+      if (!secondInAI) table1.Aggregate();
+    }
+  }
 
-	auto lineitem_ri = GetRI(LINEITEM, Q3, ds, SERVER);
-	Relation::AnnotInfo lineitem_ai = {false, true};
-	Relation lineitem(lineitem_ri, lineitem_ai);
-	filePath = GetFilePath(LINEITEM, ds);
-	lineitem.LoadData(filePath.c_str(), "q3_annot");
-	lineitem.Aggregate();
 
-	orders.SemiJoin(customer, "o_custkey", "c_custkey");
-	//orders.PrintTableWithoutRevealing("orders semijoin customer");
-	// PSI: 95.4267ms
-	// Two OEPs: 53.8459ms
-	// AnnotMul: 4.4265ms
 
-	orders.SemiJoin(lineitem, "o_orderkey", "l_orderkey");
-	//orders.PrintTableWithoutRevealing("orders semijoin lineitem");
-	// PSI: 162.877ms
-	// Two OEPs: 25.8395ms
-	// AnnotMul: 51.1201ms
+  int tableIdx2 = tableIdx[1];
+  vector<string> tableAttr2 = relatedAttr[tableIdx2];
+  vector<Relation::DataType> attrTypes2;
+  for (int i = 0; i < tableAttr2.size(); i++){
+    attrTypes2.push_back(attrName2Datatype[tableAttr2[i]]);
+  }
+  RelationName rn2 = idx2RelationName[tableIdx2];
+  e_role owner2 = idx2Role[tableIdx2];
+  auto table2_ri = GetTemplateRI(rn2, ds, owner2, tableAttr2, attrTypes2);
+  bool secondInAI = idx2AnnotInfo[tableIdx2];
+  Relation::AnnotInfo table2_ai = {true, secondInAI};
+  Relation table2(table2_ri, table2_ai);
+  auto filePath = GetFilePath(rn2, ds);
+  if (tableIdx2 <= 3) table2.LoadData(filePath.c_str(), "q3_annot");
+  if (tableIdx2 == 4) table2.LoadData(filePath.c_str(), "q8_annot1");
+  if (tableIdx2 == 5) table2.LoadData(filePath.c_str(), "q9_annot");
+  if (tableIdx2 == 6) table2.LoadData(filePath.c_str(), "q9_annot2");
+  if (!secondInAI) table2.Aggregate();
 
-	orders.Aggregate(o_groupBy);
-	orders.RevealAnnotToOwner();
+
+
+
+  int tableIdx3 = tableIdx[2];
+  vector<string> tableAttr3 = relatedAttr[tableIdx3];
+  vector<Relation::DataType> attrTypes3;
+  for (int i = 0; i < tableAttr3.size(); i++){
+    attrTypes3.push_back(attrName2Datatype[tableAttr3[i]]);
+  }
+  RelationName rn3 = idx2RelationName[tableIdx3];
+  e_role owner3 = idx2Role[tableIdx3];
+  auto table3_ri = GetTemplateRI(rn3, ds, owner3, tableAttr3, attrTypes3);
+  bool secondInAI = idx2AnnotInfo[tableIdx3];
+  Relation::AnnotInfo table3_ai = {true, secondInAI};
+  Relation table3(table3_ri, table3_ai);
+  auto filePath = GetFilePath(rn3, ds);
+  if (tableIdx3 <= 3) table3.LoadData(filePath.c_str(), "q3_annot");
+  if (tableIdx3 == 4) table3.LoadData(filePath.c_str(), "q8_annot1");
+  if (tableIdx3 == 5) table3.LoadData(filePath.c_str(), "q9_annot");
+  if (tableIdx3 == 6) table3.LoadData(filePath.c_str(), "q9_annot2");
+  if (!secondInAI) table3.Aggregate();
+
+  
+  if (tableIdx1 == 2){
+    table1.SemiJoin(table2, "o_custkey", "c_custkey");
+    table1.SemiJoin(table3, "o_orderkey", "l_orderkey");
+  }
+
+  if (tableIdx1 == 3){
+    if (tableIdx2 == 2) table1.SemiJoin(table2, "l_orderkey", "o_orderkey");
+    if (tableIdx2 == 4) table1.SemiJoin(table2, "l_partkey", "p_partkey");
+    if (tableIdx2 == 5) table1.SemiJoin(table2, "l_suppkey", "s_suppkey");
+    if (tableIdx2 == 6){
+      vector<string> ps_joinAttrs = {"ps_partkey", "ps_suppkey"};
+      vector<string> line_joinAttrs = {"l_partkey", "l_suppkey"};
+      table1.SemiJoin(table2, line_joinAttrs, ps_joinAttrs);
+    }
+    if (tableIdx3 == 2) table1.SemiJoin(table3, "l_orderkey", "o_orderkey");
+    if (tableIdx3 == 4) table1.SemiJoin(table3, "l_partkey", "p_partkey");
+    if (tableIdx3 == 5) table1.SemiJoin(table3, "l_suppkey", "s_suppkey");
+    if (tableIdx3 == 6){
+      vector<string> ps_joinAttrs = {"ps_partkey", "ps_suppkey"};
+      vector<string> line_joinAttrs = {"l_partkey", "l_suppkey"};
+      table1.SemiJoin(table3, line_joinAttrs, ps_joinAttrs);
+    }
+  }
+
+	table1.Aggregate(groupByList);
+	table1.RevealAnnotToOwner();
 	if (printResult)
-		orders.Print();
-}*/
+		table1.Print();
+}

@@ -54,7 +54,11 @@ enum DataSize
     DTOTAL
 };
 
-using run_query = void(DataSize, bool);
-run_query run_Q3, run_Q10, run_Q18, run_Q8, run_Q9, run_Qzxy;
+
+
+//inline std::string newGetFilePath(RelationName rn, DataSize ds);
+//inline Relation::RelationInfo GetTemplateRI(RelationName rn, DataSize ds, e_role owner, vector<string> attrNames, vector<Relation::DataType> attrTypes);
+using run_query = void(DataSize ds, bool printResult, vector<string> groupByList, string treeString, unordered_map<int, vector<string>> relatedAttr);
+run_query run_TemplateQ3;
 
 
