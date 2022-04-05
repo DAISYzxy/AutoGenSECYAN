@@ -35,8 +35,8 @@ using namespace hsql;
 int main(){
 
 
-  std::string query = "select o_orderkey, o_totalprice, o_orderdate, o_shippriority, sum(l_extendedprice * (1 - l_discount)) as revenue from customer, orders, lineitem where c_mktsegment = 'automobile' and c_custkey = o_custkey and l_orderkey = o_orderkey and o_orderdate < date '1995-03-13' and l_shipdate > date '1995-03-13' group by o_orderkey, o_totalprice, o_orderdate, o_shippriority;";
-  
+  std::string query = "select c_name, c_custkey, o_orderkey, l_returnflag, sum(ps_supplycost*l_quantity) from part,supplier,lineitem,partsupp,orders,customer where s_suppkey = l_suppkey and ps_suppkey = l_suppkey and c_custkey=o_custkey and ps_partkey = l_partkey and p_partkey = l_partkey and o_orderkey = l_orderkey and p_name like '\%green\%' and s_nationkey = 8 group by c_name, c_custkey, o_orderkey, l_returnflag;";
+
   // parse a given query
   hsql::SQLParserResult result;
   hsql::SQLParser::parse(query, &result);
@@ -254,7 +254,7 @@ int main(){
     if (isFreeConnexTree){
       cout << endl << "Free Connex!!!" << endl;
       for(auto it = templateTreeMap.begin(); it != templateTreeMap.end(); it++){
-        same2template = isSameTree(it->second, outTreeStr);
+        same2template = isSameTree(it->first, it->second, outTreeStr, columnExp);
         if (same2template){
           cout << "Same to template " << it->first << endl;
           templateTree = it->first;
@@ -293,25 +293,24 @@ int main(){
   cout << "Establishing connection... ";
   gParty.Init(address, port, role);
   cout << "Finished!" << endl;
-  if (templateTree == "Q3"){
-    DataSize ds;
-    cout << "Which TPCH data size to use? [0. 1MB, 1. 3MB, 2. 10MB, 3. 33MB, 4. 100MB]: ";
-    cin >> ids;
-    if (ids < 0 || ids >= 5)
-    {
-        cerr << "Data size selection error!" << endl;
-        exit(1);
-    }
-    ds = (DataSize)ids;
-    cout << "Start running query..." << endl;
-    gParty.Tick("Running time");
-    run_TemplateQ3(ds, true, groupByColumn, finalTree, relatedAttr);
-    gParty.Tick("Running time");
-    auto cost = gParty.GetCommCostAndResetStats();
-    cout << "Communication cost: " << cost / 1024 / 1024.0 << " MB" << endl;
-    cout << "Finished!" << endl;
-    return 0;
+  DataSize ds;
+  cout << "Which data size to use? [0. 1MB, 1. 3MB, 2. 10MB, 3. 33MB, 4. 100MB]: ";
+  cin >> ids;
+  if (ids < 0 || ids >= 5)
+  {
+      cerr << "Data size selection error!" << endl;
+      exit(1);
   }
+  ds = (DataSize)ids;
+  cout << "Start running query..." << endl;
+  gParty.Tick("Running time");
+  if (templateTree == "Q3") run_TemplateQ3(ds, true, groupByColumn, finalTree, relatedAttr);
+  if (templateTree == "Q10") run_TemplateQ10(ds, true, groupByColumn, finalTree, relatedAttr);
+  if (templateTree == "Q0") run_TemplateQ0(ds, true, groupByColumn, finalTree, relatedAttr);
+  gParty.Tick("Running time");
+  auto cost = gParty.GetCommCostAndResetStats();
+  cout << "Communication cost: " << cost / 1024 / 1024.0 << " MB" << endl;
+  cout << "Finished!" << endl;
   
   return 0;
 }

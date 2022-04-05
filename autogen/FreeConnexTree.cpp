@@ -87,12 +87,27 @@ void tree2String(MNode *root, string *outTreeStr){
   }
 }
 
-bool isSameTree(string templateTree, string tree){
+bool isSameTree(string QName, string templateTree, string tree, vector<string> outputList){
   if (templateTree.length() != tree.length()) return false;
   for (int i = 0; i < tree.length(); i++){
     if (templateTree[i] == 'C' || tree[i] == 'C'){
       if (templateTree[i] != tree[i]) return false;
     }  
+  }
+  if (QName == "Q3" || QName == "Q10"){
+    int root = int(tree[0]) - int('0');
+    char rootIdx;
+    if (root < 6){
+      rootIdx = idxKey[root - 1];
+    }
+    for (int i = 0; i < outputList.size(); i++){
+      if (root == 6){
+        if(outputList[i][0] != 'p' || outputList[i][0] != 's') return false;
+      }
+      else{
+        if (outputList[i][0] != rootIdx) return false;
+      }
+    }
   }
   return true;
 }

@@ -60,6 +60,6 @@ enum DataSize
 //inline std::string newGetFilePath(RelationName rn, DataSize ds);
 //inline Relation::RelationInfo GetTemplateRI(RelationName rn, DataSize ds, e_role owner, vector<string> attrNames, vector<Relation::DataType> attrTypes);
 using run_query = void(DataSize ds, bool printResult, vector<string> groupByList, string treeString, unordered_map<int, vector<string>> relatedAttr);
-run_query run_TemplateQ3;
+run_query run_TemplateQ3, run_TemplateQ10, run_TemplateQ0;
 
 

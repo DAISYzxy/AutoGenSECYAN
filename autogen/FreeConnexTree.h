@@ -34,6 +34,8 @@ class MTree {
   int getMaxDepth(MNode *root,vector<MNode*> nodes);
 };
 
+static const char idxKey[5] = {'c', 'o', 'l', 'p', 's'};
+
 // construct tree with linkGraph
 bool allNeighbourInTree(vector<int> neighbour, bool *inTree);
 void constructTree(MNode *node, MTree *tree, unordered_map<int, vector<int>> linkGraph, bool *inTree, bool *hasOutAttr);
@@ -41,4 +43,4 @@ void constructTree(MNode *node, MTree *tree, unordered_map<int, vector<int>> lin
 // tree2string functions
 unordered_map<string, string> loadTemplateTree();
 void tree2String(MNode *root, string *outTreeStr);
-bool isSameTree(string templateTree, string tree);
+bool isSameTree(string QName, string templateTree, string tree, vector<string> outputList);
